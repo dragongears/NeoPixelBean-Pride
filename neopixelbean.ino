@@ -1,9 +1,12 @@
 #include <Adafruit_NeoPixel.h>
+#include "Easing.h"
 
 #define PIN 5
 #define NUMPIXELS 12
 #define SPEED 100
 #define BRIGHTNESS 60
+#define DURATION 120
+#define RANGE 12 * 10
 
 
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
@@ -34,7 +37,7 @@ const uint16_t colors[][3] = {
     {255, 0, 255},  //Purple
     {255, 0, 255},  //Purple
     {255, 0, 0}, //Red
-    {255, 0, 0}, //Red
+    {255, 0, 0} //Red
   };
 
 void displayRainbow(int offset) {
@@ -53,11 +56,11 @@ void setup() {
 }
 
 void loop() {
-    for(int j = 0; j < 60; j++) {
+    for(int j = -DURATION+12; j < DURATION-12; j++) {
 
-    displayRainbow(j);
+    displayRainbow(Easing::easeInOutSine(abs(j), 0, RANGE, DURATION));
 
-    // TODO: Replace with sleep
     Bean.sleep(SPEED);
     }
+
 }
