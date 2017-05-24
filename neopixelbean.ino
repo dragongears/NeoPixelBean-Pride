@@ -3,10 +3,10 @@
 
 #define PIN 5
 #define NUMPIXELS 12
-#define SPEED 100
+#define SPEED 80
 #define BRIGHTNESS 60
-#define DURATION 120
-#define RANGE 12 * 10
+#define DURATION 12 * 80
+#define RANGE 12 * 80
 
 
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
@@ -56,7 +56,7 @@ void setup() {
 }
 
 void loop() {
-    for(int j = -DURATION+12; j < DURATION-12; j++) {
+    for(int j = -DURATION; j < DURATION -12; j++) {
 
     displayRainbow(Easing::easeInOutSine(abs(j), 0, RANGE, DURATION));
 
