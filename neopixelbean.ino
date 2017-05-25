@@ -2,22 +2,38 @@
 #include <PinChangeInt.h>
 #include "Easing.h"
 
-#define PIN 5
+#define NELEMS(x)  (sizeof(x) / sizeof((x)[0]))
+
+#define NEOPIXEL_PIN 5
 #define NUMPIXELS 12
 #define BRIGHTNESS 60
 
+#define BUTTON_PIN 0
+
+// Cycle Loop
+#define CYCLE_SPEED 400
+
 // Easing Loop
-#define SPEED 80
-#define DURATION 12 * 80
-#define RANGE 12 * 80
+#define EASING_SPEED 80
+#define EASING_DURATION 12 * 80
+#define EASING_RANGE 12 * 80
 
 // Display mode
-int mode = 0;
+int currentMode = 0;
 static int newMode = 0;
 
-int j;
+int loopCount;
 
-Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
+struct mode {
+    void (*setup)(void);
+    void (*loop)(void);
+};
+
+struct mode modes[2];
+
+int modesCount = NELEMS(modes);
+
+Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, NEOPIXEL_PIN, NEO_GRB + NEO_KHZ800);
 
 const uint16_t colors[][3] = {
     {255, 0, 0}, //Red
@@ -48,45 +64,47 @@ const uint16_t colors[][3] = {
     {255, 0, 0} //Red
   };
 
+
+// Call setup for current mode
+void modeSetup() {
+    modes[currentMode].setup();
+}
+
+
+// Easing mode functions
+
 void displayRainbow(int offset) {
-    for(int i = 0; i < NUMPIXELS; i++) {
-        int color = (offset%12)+i;
+    for (int i = 0; i < NUMPIXELS; i++) {
+        int color = (offset % NUMPIXELS)+i;
         pixels.setPixelColor(i, pixels.Color(colors[color][0], colors[color][1], colors[color][2]));
     }
 
     pixels.show();
 }
 
-void modeSetup() {
-    switch (mode) {
-        case 0:
-            easingSetup();
-            break;
-
-        case 1:
-            cycleSetup();
-            break;
-    }
-}
-
 void easingSetup() {
-    j = -DURATION;
-    displayRainbow(Easing::easeInOutSine(abs(j), 0, RANGE, DURATION));
+    loopCount = -EASING_DURATION;
+    displayRainbow(Easing::easeInOutSine(abs(loopCount), 0, EASING_RANGE, EASING_DURATION));
 }
 
 void easingLoop() {
-    if (j < DURATION -12) {
-        displayRainbow(Easing::easeInOutSine(abs(j), 0, RANGE, DURATION));
+    if (loopCount < EASING_DURATION - NUMPIXELS) {
+        displayRainbow(Easing::easeInOutSine(abs(loopCount), 0, EASING_RANGE, EASING_DURATION));
 
-        Bean.sleep(SPEED);
+        Bean.sleep(EASING_SPEED);
 
-        j++;
+        loopCount++;
     } else {
-        j = -DURATION;
+        loopCount = -EASING_DURATION;
     }
 }
 
+
+// Cycle mode functions
+
 void displayColor(int color) {
+
+    // Array has two entries for each color, so double up
     color = color + color;
 
     for(int i = 0; i < NUMPIXELS; i++) {
@@ -97,65 +115,53 @@ void displayColor(int color) {
 }
 
 void cycleSetup() {
-    j = 0;
-    displayColor(j);
+    loopCount = 0;
+    displayColor(loopCount);
 }
 
 void cycleLoop() {
-    if (j < 6) {
-        displayColor(j);
+    if (loopCount < 6) {
+        displayColor(loopCount);
 
-        Bean.sleep(SPEED * 5);
+        Bean.sleep(CYCLE_SPEED);
 
-        j++;
+        loopCount++;
     } else {
-        j = 0;
+        loopCount = 0;
     }
 }
 
+// Arduino setup function
 void setup() {
-    pinMode(0, INPUT_PULLUP);
+    pinMode(BUTTON_PIN, INPUT_PULLUP);
     // Valid interrupt modes are: RISING, FALLING or CHANGE
-    attachPinChangeInterrupt(0, pinChanged, RISING);
+    attachPinChangeInterrupt(BUTTON_PIN, pinChanged, RISING);
 
     pixels.begin();  //  Initialize the NeoPixels
     pixels.setBrightness(BRIGHTNESS);
 
+    modes[0].setup = &easingSetup;
+    modes[0].loop = &easingLoop;
+    modes[1].setup = &cycleSetup;
+    modes[1].loop = &cycleLoop;
+
     modeSetup();
 }
 
+// Arduino loop function
 void loop() {
-    switch (mode) {
-        case 0:
-            easingLoop();
-            break;
+    modes[currentMode].loop();
 
-        case 1:
-            cycleLoop();
-            break;
+    if (newMode != currentMode) {
+        currentMode = newMode;
+        modeSetup();
     }
-
-    if (newMode != mode) {
-        buttonPressed();
-        mode = newMode;
-    }
-}
-
-void buttonPressed() {
-    mode++;
-
-    if (mode >= 2) {
-        mode = 0;
-    }
-
-    modeSetup();
-
 }
 
 // Interrupt service routine (ISR) needs to return void and accept no arguments
 void pinChanged() {
     newMode++;
-    if (newMode >=2) {
+    if (newMode >= modesCount) {
         newMode = 0;
     }
 }
