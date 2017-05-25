@@ -1,5 +1,5 @@
 #include <Adafruit_NeoPixel.h>
-#include <Button.h>
+#include <PinChangeInt.h>
 #include "Easing.h"
 
 #define PIN 5
@@ -13,11 +13,11 @@
 
 // Display mode
 int mode = 0;
+static int newMode = 0;
 
 int j;
 
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
-Button button(0);
 
 const uint16_t colors[][3] = {
     {255, 0, 0}, //Red
@@ -78,8 +78,7 @@ void easingLoop() {
     if (j < DURATION -12) {
         displayRainbow(Easing::easeInOutSine(abs(j), 0, RANGE, DURATION));
 
-//        Bean.sleep(SPEED);
-        delay(SPEED);
+        Bean.sleep(SPEED);
 
         j++;
     } else {
@@ -106,8 +105,7 @@ void cycleLoop() {
     if (j < 6) {
         displayColor(j);
 
-//        Bean.sleep(SPEED * 5);
-        delay(SPEED * 5);
+        Bean.sleep(SPEED * 5);
 
         j++;
     } else {
@@ -117,7 +115,8 @@ void cycleLoop() {
 
 void setup() {
     pinMode(0, INPUT_PULLUP);
-    button.begin();
+    // Valid interrupt modes are: RISING, FALLING or CHANGE
+    attachPinChangeInterrupt(0, pinChanged, RISING);
 
     pixels.begin();  //  Initialize the NeoPixels
     pixels.setBrightness(BRIGHTNESS);
@@ -136,12 +135,12 @@ void loop() {
             break;
     }
 
-    if (button.pressed()) {
+    if (newMode != mode) {
         buttonPressed();
+        mode = newMode;
     }
 }
 
-// Interrupt service routine (ISR) needs to return void and accept no arguments
 void buttonPressed() {
     mode++;
 
@@ -151,4 +150,12 @@ void buttonPressed() {
 
     modeSetup();
 
+}
+
+// Interrupt service routine (ISR) needs to return void and accept no arguments
+void pinChanged() {
+    newMode++;
+    if (newMode >=2) {
+        newMode = 0;
+    }
 }
