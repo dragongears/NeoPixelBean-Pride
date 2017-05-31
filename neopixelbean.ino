@@ -20,7 +20,7 @@
 
 // Display mode
 int currentMode = 0;
-static int newMode = 0;
+volatile int newMode = 0;
 
 int loopCount;
 
