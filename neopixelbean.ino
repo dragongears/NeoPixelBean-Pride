@@ -14,7 +14,7 @@
 #define CYCLE_SPEED 400
 
 // Easing Loop
-#define EASING_SPEED 80
+#define EASING_SPEED 20
 #define EASING_DURATION 12 * 80
 #define EASING_RANGE 12 * 80
 
@@ -84,12 +84,12 @@ void displayRainbow(int offset) {
 
 void easingSetup() {
     loopCount = -EASING_DURATION;
-    displayRainbow(Easing::easeInOutSine(abs(loopCount), 0, EASING_RANGE, EASING_DURATION));
+    displayRainbow(Easing::easeInOutQuad(abs(loopCount), 0, EASING_RANGE, EASING_DURATION));
 }
 
 void easingLoop() {
     if (loopCount < EASING_DURATION - NUMPIXELS) {
-        displayRainbow(Easing::easeInOutSine(abs(loopCount), 0, EASING_RANGE, EASING_DURATION));
+        displayRainbow(Easing::easeInOutQuad(abs(loopCount), 0, EASING_RANGE, EASING_DURATION));
 
         Bean.sleep(EASING_SPEED);
 
