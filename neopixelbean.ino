@@ -13,6 +13,9 @@
 // Cycle Loop
 #define CYCLE_SPEED 400
 
+// Rotate Loop
+#define ROTATE_SPEED 200
+
 // Easing Loop
 #define EASING_SPEED 20
 #define EASING_DURATION 12 * 80
@@ -29,7 +32,7 @@ struct mode {
     void (*loop)(void);
 };
 
-struct mode modes[2];
+struct mode modes[3];
 
 int modesCount = NELEMS(modes);
 
@@ -70,9 +73,7 @@ void modeSetup() {
     modes[currentMode].setup();
 }
 
-
-// Easing mode functions
-
+// display rainbow
 void displayRainbow(int offset) {
     for (int i = 0; i < NUMPIXELS; i++) {
         int color = (offset % NUMPIXELS)+i;
@@ -81,6 +82,8 @@ void displayRainbow(int offset) {
 
     pixels.show();
 }
+
+// Easing mode functions
 
 void easingSetup() {
     loopCount = -EASING_DURATION;
@@ -96,6 +99,26 @@ void easingLoop() {
         loopCount++;
     } else {
         loopCount = -EASING_DURATION;
+    }
+}
+
+
+// Rotate mode functions
+
+void rotateSetup() {
+    loopCount = NUMPIXELS - 1;
+    displayRainbow(loopCount);
+}
+
+void rotateLoop() {
+    if (loopCount > 0) {
+        displayRainbow(loopCount);
+
+        Bean.sleep(ROTATE_SPEED);
+
+        loopCount--;
+    } else {
+        loopCount = NUMPIXELS - 1;
     }
 }
 
@@ -144,6 +167,8 @@ void setup() {
     modes[0].loop = &easingLoop;
     modes[1].setup = &cycleSetup;
     modes[1].loop = &cycleLoop;
+    modes[2].setup = &rotateSetup;
+    modes[2].loop = &rotateLoop;
 
     modeSetup();
 }
