@@ -16,6 +16,9 @@
 // Rotate Loop
 #define ROTATE_SPEED 200
 
+// Chase Loop
+#define CHASE_SPEED 50
+
 // Easing Loop
 #define EASING_SPEED 20
 #define EASING_DURATION 12 * 80
@@ -26,13 +29,14 @@ int currentMode = 0;
 volatile int newMode = 0;
 
 int loopCount;
+int offsetCount;
 
 struct mode {
     void (*setup)(void);
     void (*loop)(void);
 };
 
-struct mode modes[3];
+struct mode modes[4];
 
 int modesCount = NELEMS(modes);
 
@@ -123,6 +127,36 @@ void rotateLoop() {
 }
 
 
+// Chase mode functions
+
+void displayChase(int color, int offset) {
+    pixels.setPixelColor(offset, pixels.Color(colors[color][0], colors[color][1], colors[color][2]));
+
+    pixels.show();
+}
+
+void chaseSetup() {
+    loopCount = 0;  // Current color
+    offsetCount = loopCount;    // Position along ring
+}
+
+void chaseLoop() {
+    displayChase(loopCount, offsetCount);
+
+    offsetCount++;
+    offsetCount %= NUMPIXELS;
+
+    if (offsetCount == loopCount) {
+        loopCount++;
+        loopCount %= NUMPIXELS;
+
+        offsetCount = loopCount;
+    }
+
+    Bean.sleep(CHASE_SPEED);
+}
+
+
 // Cycle mode functions
 
 void displayColor(int color) {
@@ -169,6 +203,8 @@ void setup() {
     modes[1].loop = &cycleLoop;
     modes[2].setup = &rotateSetup;
     modes[2].loop = &rotateLoop;
+    modes[3].setup = &chaseSetup;
+    modes[3].loop = &chaseLoop;
 
     modeSetup();
 }
