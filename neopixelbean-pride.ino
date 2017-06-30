@@ -10,6 +10,9 @@
 
 #define BUTTON_PIN 0
 
+// Sparkle Loop
+#define SPARKLE_SPEED 40
+
 // Cycle Loop
 #define CYCLE_SPEED 400
 
@@ -30,13 +33,16 @@ volatile int newMode = 0;
 
 int loopCount;
 int offsetCount;
+uint16_t color[] = {
+    0, 0, 0
+  };
 
 struct mode {
     void (*setup)(void);
     void (*loop)(void);
 };
 
-struct mode modes[4];
+struct mode modes[5];
 
 int modesCount = NELEMS(modes);
 
@@ -188,6 +194,47 @@ void cycleLoop() {
     }
 }
 
+void sparkleSetup() {
+    // Turn off all LEDs
+    for(int i = 0; i < NUMPIXELS; i++) {
+        pixels.setPixelColor(i, pixels.Color(0, 0, 0));
+    }
+
+    pixels.show();
+
+    // Set fade to 0
+    loopCount = 0;
+}
+
+void sparkleLoop() {
+    // If fade is 0 choose new color and position, reset fade
+
+    if (loopCount) {
+        color[0] >>= 1;
+        color[1] >>= 1;
+        color[2] >>= 1;
+        loopCount--;
+
+        pixels.setPixelColor(offsetCount, pixels.Color(color[0], color[1], color[2]));
+        pixels.show();
+
+        Bean.sleep(SPARKLE_SPEED);
+    } else {
+        int idx = random(12);
+        offsetCount = random(12);
+        color[0] = colors[idx][0];
+        color[1] = colors[idx][1];
+        color[2] = colors[idx][2];
+        loopCount = 7;
+
+        pixels.setPixelColor(offsetCount, pixels.Color(color[0], color[1], color[2]));
+        pixels.show();
+
+        Bean.sleep(SPARKLE_SPEED);
+    }
+
+}
+
 // Arduino setup function
 void setup() {
     pinMode(BUTTON_PIN, INPUT_PULLUP);
@@ -205,6 +252,8 @@ void setup() {
     modes[2].loop = &rotateLoop;
     modes[3].setup = &chaseSetup;
     modes[3].loop = &chaseLoop;
+    modes[4].setup = &sparkleSetup;
+    modes[4].loop = &sparkleLoop;
 
     modeSetup();
 }
